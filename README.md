@@ -41,6 +41,41 @@ CLI Agent
 - Narration is limited to known signals and evidence
 - Confidence is attached to every issue
 
+## Getting Started
+
+1. Install dependencies:
+
+```
+npm install
+```
+
+2. Build the project:
+
+```
+npm run build
+```
+
+3. Run the CLI:
+
+```
+npm start -- --path . --severity savage --focus architecture
+```
+
+## Scripts
+
+- `npm run lint` - run ESLint
+- `npm run lint:fix` - auto-fix lint issues
+- `npm run typecheck` - run TypeScript in no-emit mode
+- `npm run build` - compile to `dist/`
+- `npm start` - run the compiled CLI
+
+## Project Structure
+
+- `src/index.ts` - CLI entry point
+- `src/pipeline.ts` - agent pipeline orchestrator
+- `src/agents/` - agent implementations
+- `src/types.ts` - shared types and schemas
+
 ## Learn More
 
 See `AGENTS.md` for the full specification and detailed agent responsibilities.
