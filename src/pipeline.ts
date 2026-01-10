@@ -7,7 +7,7 @@ import { runRoastNarratorAgent } from "./agents/roast-narrator-agent";
 
 export async function runPipeline(argv: string[]): Promise<string> {
   const cliConfig = runCliAgent(argv);
-  const scanResult = runRepoScannerAgent(cliConfig);
+  const scanResult = await runRepoScannerAgent(cliConfig);
   const analysisResult = runCodeAnalysisAgent(cliConfig, scanResult);
   const insights = runInsightAggregatorAgent(scanResult, analysisResult);
   const roast = runRoastNarratorAgent(cliConfig, insights);

@@ -68,6 +68,7 @@ npm start -- --path . --severity savage --focus architecture
 - `npm run typecheck` - run TypeScript in no-emit mode
 - `npm run build` - compile to `dist/`
 - `npm start` - run the compiled CLI
+- `npm test` - build and run the test suite
 
 ## Project Structure
 

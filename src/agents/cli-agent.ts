@@ -46,10 +46,23 @@ function coerceFocus(value?: string): Focus {
   return DEFAULT_CONFIG.focus;
 }
 
+function parseNumber(value?: string): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return undefined;
+  }
+  return parsed;
+}
+
 export function runCliAgent(argv: string[]): CliConfig {
   return {
     path: getArgValue(argv, "path") ?? DEFAULT_CONFIG.path,
     severity: coerceSeverity(getArgValue(argv, "severity")),
     focus: coerceFocus(getArgValue(argv, "focus")),
+    maxFileSizeMB: parseNumber(getArgValue(argv, "max-file-size-mb")),
+    scanTimeoutMs: parseNumber(getArgValue(argv, "scan-timeout-ms")),
   };
 }

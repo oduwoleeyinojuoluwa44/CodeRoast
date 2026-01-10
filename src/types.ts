@@ -5,13 +5,20 @@ export interface CliConfig {
   path: string;
   severity: Severity;
   focus: Focus;
+  maxFileSizeMB?: number;
+  scanTimeoutMs?: number;
 }
 
 export interface RepoScanResult {
-  languages: string[];
-  fileCount: number;
-  folders: number;
+  languages: Record<string, number>;
+  fileTypes: Record<string, number>;
+  totalFiles: number;
+  totalFolders: number;
   entryPoints: string[];
+  projectFiles: string[];
+  ignoredCount: number;
+  repoSizeMB?: number;
+  ignoredPaths?: string[];
 }
 
 export interface AnalysisMetrics {
