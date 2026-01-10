@@ -9,6 +9,13 @@ export interface CliConfig {
   scanTimeoutMs?: number;
 }
 
+export interface FileManifestEntry {
+  path: string;
+  sizeBytes: number;
+  extension: string;
+  language?: string;
+}
+
 export interface RepoScanResult {
   languages: Record<string, number>;
   fileTypes: Record<string, number>;
@@ -19,20 +26,49 @@ export interface RepoScanResult {
   ignoredCount: number;
   repoSizeMB?: number;
   ignoredPaths?: string[];
+  files: FileManifestEntry[];
+}
+
+export interface LongFunction {
+  file: string;
+  name: string;
+  length: number;
+}
+
+export interface DuplicateOccurrence {
+  file: string;
+  startLine: number;
+  endLine: number;
+}
+
+export interface DuplicateBlock {
+  hash: string;
+  length: number;
+  occurrences: DuplicateOccurrence[];
+}
+
+export interface CircularDependency {
+  from: string;
+  to: string;
+}
+
+export interface TestPresence {
+  hasTests: boolean;
+  testFiles: string[];
 }
 
 export interface AnalysisMetrics {
   maxFunctionLength: number;
   avgFunctionLength: number;
   duplicateBlocks: number;
+  totalFunctions: number;
 }
 
-export type TestCoverage = "unknown" | "low" | "medium" | "high";
-
 export interface AnalysisSignals {
-  businessLogicInControllers: boolean;
-  circularDependencies: boolean;
-  testCoverage: TestCoverage;
+  longFunctions: LongFunction[];
+  duplicateBlocks: DuplicateBlock[];
+  circularDependencies: CircularDependency[];
+  testPresence: TestPresence;
 }
 
 export interface AnalysisResult {

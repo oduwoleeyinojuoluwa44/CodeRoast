@@ -123,6 +123,12 @@ type ScanState = {
   ignoredCount: number;
   ignoredPaths: Set<string>;
   repoSizeBytes: number;
+  files: {
+    path: string;
+    sizeBytes: number;
+    extension: string;
+    language: string;
+  }[];
   warnings: string[];
 };
 
@@ -335,6 +341,7 @@ export async function runRepoScannerAgent(config: CliConfig): Promise<RepoScanRe
     ignoredCount: 0,
     ignoredPaths: new Set<string>(),
     repoSizeBytes: 0,
+    files: [],
     warnings: [],
   };
 
@@ -425,9 +432,15 @@ export async function runRepoScannerAgent(config: CliConfig): Promise<RepoScanRe
         }
       }
 
+      const language = LANGUAGE_BY_EXTENSION[extension] ?? "other";
+      scanState.files.push({
+        path: relativePath,
+        sizeBytes: stats.size,
+        extension,
+        language,
+      });
       scanState.totalFiles += 1;
       increment(scanState.fileTypes, extension || NO_EXTENSION_KEY);
-      const language = LANGUAGE_BY_EXTENSION[extension] ?? "other";
       increment(scanState.languages, language);
     }
 
@@ -458,6 +471,7 @@ export async function runRepoScannerAgent(config: CliConfig): Promise<RepoScanRe
     projectFiles: Array.from(scanState.projectFiles).sort(),
     ignoredCount: scanState.ignoredCount,
     repoSizeMB: bytesToMB(scanState.repoSizeBytes),
+    files: scanState.files.sort((a, b) => a.path.localeCompare(b.path)),
   };
 
   if (scanState.ignoredPaths.size > 0) {

@@ -36,6 +36,7 @@ test("scans an empty repo", async () => {
     assert.deepEqual(result.languages, {});
     assert.deepEqual(result.fileTypes, {});
     assert.deepEqual(result.entryPoints, []);
+    assert.deepEqual(result.files, []);
   });
 });
 
@@ -94,5 +95,7 @@ test("counts languages, file types, and other", async () => {
     assert.equal(result.fileTypes[".json"], 1);
     assert.equal(result.fileTypes[".foo"], 1);
     assert.equal(result.fileTypes["<none>"], 1);
+    assert.equal(result.files.length, result.totalFiles);
+    assert.ok(result.files.some((file) => file.path === "src/index.ts"));
   });
 });
