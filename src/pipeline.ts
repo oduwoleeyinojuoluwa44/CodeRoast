@@ -1,5 +1,6 @@
 import { runCliAgent } from "./agents/cli-agent";
 import { runCodeAnalysisAgent } from "./agents/code-analysis-agent";
+import { runEvidenceGuardAgent } from "./agents/evidence-guard-agent";
 import { runInsightAggregatorAgent } from "./agents/insight-aggregator-agent";
 import { runOutputFormatterAgent } from "./agents/output-formatter-agent";
 import { runRepoScannerAgent } from "./agents/repo-scanner-agent";
@@ -10,8 +11,8 @@ export async function runPipeline(argv: string[]): Promise<string> {
   const scanResult = await runRepoScannerAgent(cliConfig);
   const analysisResult = await runCodeAnalysisAgent(cliConfig, scanResult);
   const insights = runInsightAggregatorAgent(scanResult, analysisResult);
-  const roast = runRoastNarratorAgent(cliConfig, insights);
+  const guardedInsights = runEvidenceGuardAgent(insights);
+  const roast = runRoastNarratorAgent(cliConfig, guardedInsights);
   const formatted = runOutputFormatterAgent(cliConfig, roast);
-
   return formatted.text;
 }

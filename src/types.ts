@@ -33,6 +33,8 @@ export interface LongFunction {
   file: string;
   name: string;
   length: number;
+  startLine: number;
+  endLine: number;
 }
 
 export interface DuplicateOccurrence {
@@ -50,6 +52,10 @@ export interface DuplicateBlock {
 export interface CircularDependency {
   from: string;
   to: string;
+  fromStartLine: number;
+  fromEndLine: number;
+  toStartLine: number;
+  toEndLine: number;
 }
 
 export interface TestPresence {
@@ -78,15 +84,38 @@ export interface AnalysisResult {
 
 export type Confidence = "low" | "medium" | "high";
 
+export type EvidenceMetricType = "loc" | "count" | "hash";
+
+export interface EvidenceMetric {
+  type: EvidenceMetricType;
+  value: number | string;
+}
+
+export interface EvidenceItem {
+  file: string;
+  startLine: number;
+  endLine: number;
+  metrics: EvidenceMetric[];
+}
+
 export interface Issue {
   type: string;
   signal: string;
   confidence: Confidence;
-  evidence: string;
+  evidence: EvidenceItem[];
 }
 
 export interface AggregatedInsights {
   issues: Issue[];
+}
+
+export interface GuardedIssue extends Issue {
+  evidenceComplete: boolean;
+  missingEvidenceReason?: string;
+}
+
+export interface GuardedInsights {
+  issues: GuardedIssue[];
 }
 
 export interface RoastResult {

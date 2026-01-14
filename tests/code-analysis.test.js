@@ -61,7 +61,13 @@ test("analyzes ts/js files for core signals", async () => {
     const analysis = await runCodeAnalysisAgent(config, scan);
 
     assert.ok(analysis.signals.longFunctions.length >= 1);
-    assert.ok(analysis.signals.longFunctions.some((fn) => fn.file === "src/long.ts"));
+    const longFn = analysis.signals.longFunctions.find(
+      (fn) => fn.file === "src/long.ts"
+    );
+    assert.ok(longFn);
+    assert.equal(typeof longFn.startLine, "number");
+    assert.equal(typeof longFn.endLine, "number");
+    assert.ok(longFn.endLine >= longFn.startLine);
 
     assert.ok(analysis.signals.duplicateBlocks.length >= 1);
     assert.ok(
@@ -70,13 +76,18 @@ test("analyzes ts/js files for core signals", async () => {
       )
     );
 
-    assert.ok(
-      analysis.signals.circularDependencies.some(
-        (cycle) =>
-          (cycle.from === "src/a.ts" && cycle.to === "src/b.ts") ||
-          (cycle.from === "src/b.ts" && cycle.to === "src/a.ts")
-      )
+    const cycle = analysis.signals.circularDependencies.find(
+      (item) =>
+        (item.from === "src/a.ts" && item.to === "src/b.ts") ||
+        (item.from === "src/b.ts" && item.to === "src/a.ts")
     );
+    assert.ok(cycle);
+    assert.equal(typeof cycle.fromStartLine, "number");
+    assert.equal(typeof cycle.fromEndLine, "number");
+    assert.equal(typeof cycle.toStartLine, "number");
+    assert.equal(typeof cycle.toEndLine, "number");
+    assert.ok(cycle.fromEndLine >= cycle.fromStartLine);
+    assert.ok(cycle.toEndLine >= cycle.toStartLine);
 
     assert.equal(analysis.signals.testPresence.hasTests, true);
     assert.ok(analysis.signals.testPresence.testFiles.includes("src/__tests__/smoke.test.ts"));

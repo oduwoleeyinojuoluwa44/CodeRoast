@@ -18,12 +18,18 @@ export const DUPLICATE_MIN_OCCURRENCES = 2;
 const JS_TS_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 const TEST_DIR_NAMES = new Set(["__tests__", "test", "tests"]);
 
+type ImportReference = {
+  specifier: string;
+  startLine: number;
+  endLine: number;
+};
+
 type NormalizedFile = {
   path: string;
   extension: string;
   normalizedLines: string[];
   lineNumbers: number[];
-  imports: string[];
+  imports: ImportReference[];
 };
 
 type DuplicateCandidate = {
@@ -46,6 +52,15 @@ function getScriptKind(extension: string): ts.ScriptKind {
     default:
       return ts.ScriptKind.TS;
   }
+}
+
+function getLineRange(
+  node: ts.Node,
+  sourceFile: ts.SourceFile
+): { startLine: number; endLine: number } {
+  const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+  const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
+  return { startLine: start.line + 1, endLine: end.line + 1 };
 }
 
 function normalizeContent(content: string): { normalizedLines: string[]; lineNumbers: number[] } {
@@ -91,22 +106,27 @@ function toAbsolutePath(rootPath: string, relativePath: string): string {
   return path.resolve(rootPath, path.join(...parts));
 }
 
-function collectImports(sourceFile: ts.SourceFile): string[] {
-  const imports: string[] = [];
+function collectImports(sourceFile: ts.SourceFile): ImportReference[] {
+  const imports: ImportReference[] = [];
+
+  const addImport = (specifier: string, node: ts.Node): void => {
+    const { startLine, endLine } = getLineRange(node, sourceFile);
+    imports.push({ specifier, startLine, endLine });
+  };
 
   const visit = (node: ts.Node): void => {
     if (ts.isImportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
-      imports.push(node.moduleSpecifier.text);
+      addImport(node.moduleSpecifier.text, node);
     } else if (
       ts.isExportDeclaration(node) &&
       node.moduleSpecifier &&
       ts.isStringLiteral(node.moduleSpecifier)
     ) {
-      imports.push(node.moduleSpecifier.text);
+      addImport(node.moduleSpecifier.text, node);
     } else if (ts.isImportEqualsDeclaration(node)) {
       const ref = node.moduleReference;
       if (ts.isExternalModuleReference(ref) && ref.expression && ts.isStringLiteral(ref.expression)) {
-        imports.push(ref.expression.text);
+        addImport(ref.expression.text, node);
       }
     } else if (ts.isCallExpression(node)) {
       if (
@@ -115,11 +135,11 @@ function collectImports(sourceFile: ts.SourceFile): string[] {
         node.arguments.length === 1 &&
         ts.isStringLiteral(node.arguments[0])
       ) {
-        imports.push(node.arguments[0].text);
+        addImport(node.arguments[0].text, node);
       } else if (node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length === 1) {
         const arg = node.arguments[0];
         if (ts.isStringLiteral(arg)) {
-          imports.push(arg.text);
+          addImport(arg.text, node);
         }
       }
     }
@@ -171,12 +191,16 @@ function collectFunctionLengths(sourceFile: ts.SourceFile, filePath: string): Lo
     if (ts.isFunctionLike(node) && "body" in node && node.body) {
       const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
       const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
-      const length = end.line - start.line + 1;
+      const startLine = start.line + 1;
+      const endLine = end.line + 1;
+      const length = endLine - startLine + 1;
 
       functions.push({
         file: filePath,
         name: getFunctionName(node, sourceFile),
         length,
+        startLine,
+        endLine,
       });
     }
 
@@ -339,15 +363,18 @@ function collectCircularDependencies(
   files: NormalizedFile[],
   filePaths: Set<string>
 ): CircularDependency[] {
-  const graph = new Map<string, Set<string>>();
+  const graph = new Map<string, Map<string, { startLine: number; endLine: number }[]>>();
 
   for (const file of files) {
-    const edges = graph.get(file.path) ?? new Set<string>();
-    for (const specifier of file.imports) {
-      const resolved = resolveImportPath(file.path, specifier, filePaths);
-      if (resolved) {
-        edges.add(resolved);
+    const edges = new Map<string, { startLine: number; endLine: number }[]>();
+    for (const ref of file.imports) {
+      const resolved = resolveImportPath(file.path, ref.specifier, filePaths);
+      if (!resolved) {
+        continue;
       }
+      const ranges = edges.get(resolved) ?? [];
+      ranges.push({ startLine: ref.startLine, endLine: ref.endLine });
+      edges.set(resolved, ranges);
     }
     graph.set(file.path, edges);
   }
@@ -355,15 +382,26 @@ function collectCircularDependencies(
   const cycles: CircularDependency[] = [];
   const seen = new Set<string>();
   for (const [from, targets] of graph) {
-    for (const to of targets) {
-      if (graph.get(to)?.has(from)) {
-        const key = [from, to].sort().join("::");
-        if (seen.has(key)) {
-          continue;
-        }
-        seen.add(key);
-        cycles.push({ from, to });
+    for (const [to, ranges] of targets) {
+      const reverseRanges = graph.get(to)?.get(from);
+      if (!reverseRanges || reverseRanges.length === 0) {
+        continue;
       }
+      const key = [from, to].sort().join("::");
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      const fromRange = ranges[0];
+      const toRange = reverseRanges[0];
+      cycles.push({
+        from,
+        to,
+        fromStartLine: fromRange.startLine,
+        fromEndLine: fromRange.endLine,
+        toStartLine: toRange.startLine,
+        toEndLine: toRange.endLine,
+      });
     }
   }
 
