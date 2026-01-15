@@ -58,7 +58,13 @@ npm install
 npm run build
 ```
 
-3. Run the CLI:
+3. (Optional) Enable Gemini narration:
+
+```
+set GEMINI_API_KEY=your_api_key
+```
+
+4. Run the CLI:
 
 ```
 npm start -- --path . --severity savage --focus architecture

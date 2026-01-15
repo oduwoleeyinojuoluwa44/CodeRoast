@@ -12,7 +12,7 @@ export async function runPipeline(argv: string[]): Promise<string> {
   const analysisResult = await runCodeAnalysisAgent(cliConfig, scanResult);
   const insights = runInsightAggregatorAgent(scanResult, analysisResult);
   const guardedInsights = runEvidenceGuardAgent(insights);
-  const roast = runRoastNarratorAgent(cliConfig, guardedInsights);
+  const roast = await runRoastNarratorAgent(cliConfig, guardedInsights);
   const formatted = runOutputFormatterAgent(cliConfig, roast);
   return formatted.text;
 }

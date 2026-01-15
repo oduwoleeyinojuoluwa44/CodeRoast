@@ -30,7 +30,7 @@ CLI Agent
   -> Code Analysis Agent
   -> Insight Aggregator Agent
   -> Evidence Guard Agent
-  -> Roast Narrator Agent
+  -> Roast Narrator Agent (Gemini API)
   -> Output Formatter Agent
 ```
 
@@ -245,7 +245,7 @@ Planned: god files, layer violations, dependency direction.
 
 ---
 
-## 6. Roast Narrator Agent
+## 6. Roast Narrator Agent (Gemini API)
 
 **Type:** Generative (Constrained)  
 **Role:** Human-readable explanation and humor
@@ -255,6 +255,11 @@ Planned: god files, layer violations, dependency direction.
 * Generate roast-style feedback
 * Explain issues using provided evidence
 * Match selected tone (gentle, savage, investor-demo)
+* Call Gemini API (Gemini 3) with evidence-only prompts
+
+### Configuration
+
+* `GEMINI_API_KEY` (required to enable Gemini)
 
 ### Hard Constraints
 
@@ -305,6 +310,15 @@ Score: 6.8 / 10
 Worst case behavior:
 
 > Output becomes factual and boring - never incorrect. If evidence is missing, the narrator says "not enough data".
+
+---
+
+## Implementation Plan (Gemini Integration)
+
+1. Add a Gemini client module and strict evidence-only prompt builder.
+2. Use `GEMINI_API_KEY` to enable the narrator, with deterministic fallback when missing or on API error.
+3. Wire Gemini into the pipeline using Evidence Guard output only.
+4. Add tests with mocked Gemini responses and failure-mode fallback.
 
 ---
 
