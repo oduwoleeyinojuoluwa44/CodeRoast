@@ -15,6 +15,7 @@ CLI Agent
   -> Repo Scanner Agent
   -> Code Analysis Agent
   -> Insight Aggregator Agent
+  -> Evidence Guard Agent
   -> Roast Narrator Agent
   -> Output Formatter Agent
 ```
@@ -25,6 +26,7 @@ CLI Agent
 - Repo Scanner Agent: discovers files, languages, and entry points
 - Code Analysis Agent: extracts structural signals and metrics
 - Insight Aggregator Agent: merges findings and ranks issues with confidence
+- Evidence Guard Agent: validates evidence completeness and gates narration
 - Roast Narrator Agent: generates explanation constrained to evidence
 - Output Formatter Agent: renders final output for the terminal
 
@@ -39,6 +41,7 @@ CLI Agent
 
 - No raw code is sent to the narrator
 - Narration is limited to known signals and evidence
+- Evidence completeness is validated before narration
 - Confidence is attached to every issue
 
 ## Getting Started
