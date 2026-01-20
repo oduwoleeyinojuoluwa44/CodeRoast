@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { runPipeline } from "./pipeline";
 
 runPipeline(process.argv.slice(2))

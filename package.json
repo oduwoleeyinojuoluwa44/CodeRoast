@@ -12,14 +12,15 @@
     "test": "npm run build && node --test tests/**/*.test.js"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "ignore": "^5.3.1",
     "typescript": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
-    "@types/node": "^20.11.0",
     "eslint": "^9.0.0",
     "globals": "^15.0.0"
   }

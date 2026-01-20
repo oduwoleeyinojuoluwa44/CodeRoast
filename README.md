@@ -64,6 +64,12 @@ npm run build
 set GEMINI_API_KEY=your_api_key
 ```
 
+You can also add it to a `.env` file at the project root:
+
+```
+GEMINI_API_KEY=your_api_key
+```
+
 4. Run the CLI:
 
 ```
