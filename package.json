@@ -6,6 +6,7 @@
     "build": "tsc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "demo:fix": "node scripts/demo-fix.js",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/**/*.test.js"

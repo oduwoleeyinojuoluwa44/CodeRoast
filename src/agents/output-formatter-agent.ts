@@ -17,6 +17,9 @@ export function runOutputFormatterAgent(
       fixLines.push(
         `${suggestion.issueId}. [${suggestion.issueType}] ${status} - ${suggestion.verificationMessage}`
       );
+      if (suggestion.verificationDetails) {
+        fixLines.push(`Details: ${suggestion.verificationDetails}`);
+      }
       if (suggestion.patch) {
         fixLines.push(suggestion.patch);
       }

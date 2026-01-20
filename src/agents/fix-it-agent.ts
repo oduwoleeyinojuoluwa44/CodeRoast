@@ -15,6 +15,12 @@ import type {
 
 type LineRange = { startLine: number; endLine: number };
 
+type VerificationResult = {
+  ok: boolean;
+  message: string;
+  details?: string;
+};
+
 type FilePatch = {
   filePath: string;
   hunks: Hunk[];
@@ -298,7 +304,7 @@ function verifyLongFunctionFix(
   before: AnalysisResult,
   after: AnalysisResult,
   evidence: EvidenceItem
-): { ok: boolean; message: string } {
+): VerificationResult {
   const range = { startLine: evidence.startLine, endLine: evidence.endLine };
   const beforeMax = findMaxLongFunctionInRange(
     before.signals.longFunctions,
@@ -313,20 +319,23 @@ function verifyLongFunctionFix(
   if (beforeMax === 0) {
     return { ok: false, message: "No long function found in evidence range." };
   }
+  const afterLabel = afterMax === 0 ? `< ${LONG_FUNCTION_LOC}` : `${afterMax}`;
+  const details = `longFunctionLength: ${beforeMax} -> ${afterLabel}`;
   if (afterMax === 0 || afterMax < beforeMax) {
-    return { ok: true, message: "Long function length reduced." };
+    return { ok: true, message: "Long function length reduced.", details };
   }
-  return { ok: false, message: "Long function length did not improve." };
+  return { ok: false, message: "Long function length did not improve.", details };
 }
 
 function verifyDuplicateFix(
   before: AnalysisResult,
   after: AnalysisResult
-): { ok: boolean; message: string } {
+): VerificationResult {
+  const details = `duplicateBlocks: ${before.metrics.duplicateBlocks} -> ${after.metrics.duplicateBlocks}`;
   if (after.metrics.duplicateBlocks < before.metrics.duplicateBlocks) {
-    return { ok: true, message: "Duplicate blocks reduced." };
+    return { ok: true, message: "Duplicate blocks reduced.", details };
   }
-  return { ok: false, message: "Duplicate blocks did not improve." };
+  return { ok: false, message: "Duplicate blocks did not improve.", details };
 }
 
 async function generatePatch(
@@ -430,7 +439,10 @@ async function attemptFix(
 
   const updatedAnalysis = await runCodeAnalysisAgent(config, scan, overrides);
 
-  let verification = { ok: false, message: "No verification available." };
+  let verification: VerificationResult = {
+    ok: false,
+    message: "No verification available.",
+  };
   if (issue.signal === "longFunctions" && evidenceItems[0]) {
     verification = verifyLongFunctionFix(analysis, updatedAnalysis, evidenceItems[0]);
   } else if (issue.signal === "duplicateBlocks") {
@@ -445,6 +457,7 @@ async function attemptFix(
     patch: patchText.trim(),
     verified: verification.ok,
     verificationMessage: verification.message,
+    verificationDetails: verification.details,
   };
 }
 

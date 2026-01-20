@@ -30,6 +30,7 @@ CLI Agent
   -> Code Analysis Agent
   -> Insight Aggregator Agent
   -> Evidence Guard Agent
+  -> Fix-It Agent (optional --fix)
   -> Roast Narrator Agent (Gemini API)
   -> Output Formatter Agent
 ```
@@ -245,7 +246,31 @@ Planned: god files, layer violations, dependency direction.
 
 ---
 
-## 6. Roast Narrator Agent (Gemini API)
+## 6. Fix-It Agent (optional --fix)
+
+**Type:** Generative + Deterministic guard  
+**Role:** Evidence-locked patch preview and verification
+
+### Responsibilities
+
+* Generate patch suggestions with Gemini using evidence-only prompts
+* Reject any edit outside evidence line ranges
+* Re-run analysis on patched content to verify improvement
+* Emit unified diff previews only (no file writes)
+
+### Configuration
+
+* `GEMINI_API_KEY` (required to enable fixes)
+* `--fix` (enable fix-it previews)
+
+### Hard Constraints
+
+* Only touch files and line ranges present in evidence
+* If verification fails, mark the suggestion as rejected
+
+---
+
+## 7. Roast Narrator Agent (Gemini API)
 
 **Type:** Generative (Constrained)  
 **Role:** Human-readable explanation and humor
@@ -276,7 +301,7 @@ Planned: god files, layer violations, dependency direction.
 
 ---
 
-## 7. Output Formatter Agent
+## 8. Output Formatter Agent
 
 **Type:** Deterministic  
 **Role:** UX presentation
@@ -303,6 +328,7 @@ Score: 6.8 / 10
 | --------------------------------- | ------------------------- |
 | No raw code to LLM                | Insight Aggregator        |
 | Evidence completeness validation  | Evidence Guard            |
+| Evidence-locked patch scope       | Fix-It Agent              |
 | Evidence-only narration           | Evidence Guard + Narrator |
 | Confidence labeling               | Aggregator                |
 | Deterministic fallback            | Output Formatter          |
@@ -324,7 +350,7 @@ Worst case behavior:
 
 ## Judge-Ready Summary
 
-> CodeRoast uses a multi-agent pipeline where deterministic agents extract verifiable signals and a constrained generative agent narrates them. The Evidence Guard enforces evidence completeness, ensuring explainability, auditability, and hallucination resistance.
+> CodeRoast uses a multi-agent pipeline where deterministic agents extract verifiable signals and a constrained generative agent narrates them. The Evidence Guard enforces evidence completeness, and the Fix-It Agent offers evidence-locked patch previews with verification.
 
 ---
 

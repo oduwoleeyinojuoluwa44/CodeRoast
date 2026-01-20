@@ -131,6 +131,7 @@ export interface FixSuggestion {
   patch: string;
   verified: boolean;
   verificationMessage: string;
+  verificationDetails?: string;
 }
 
 export interface FixResult {
