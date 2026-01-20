@@ -7,6 +7,7 @@ export interface CliConfig {
   focus: Focus;
   maxFileSizeMB?: number;
   scanTimeoutMs?: number;
+  enableFixes?: boolean;
 }
 
 export interface FileManifestEntry {
@@ -120,6 +121,20 @@ export interface GuardedInsights {
 
 export interface RoastResult {
   content: string;
+}
+
+export interface FixSuggestion {
+  issueId: number;
+  issueType: string;
+  signal: string;
+  files: string[];
+  patch: string;
+  verified: boolean;
+  verificationMessage: string;
+}
+
+export interface FixResult {
+  suggestions: FixSuggestion[];
 }
 
 export interface FormattedOutput {

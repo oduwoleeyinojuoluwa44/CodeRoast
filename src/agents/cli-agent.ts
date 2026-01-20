@@ -57,6 +57,29 @@ function parseNumber(value?: string): number | undefined {
   return parsed;
 }
 
+function parseBooleanFlag(args: string[], name: string): boolean {
+  const flag = `--${name}`;
+  const prefix = `${flag}=`;
+
+  for (const arg of args) {
+    if (arg === flag) {
+      return true;
+    }
+    if (arg.startsWith(prefix)) {
+      const value = arg.slice(prefix.length).toLowerCase();
+      if (value === "" || value === "true" || value === "1") {
+        return true;
+      }
+      if (value === "false" || value === "0") {
+        return false;
+      }
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function runCliAgent(argv: string[]): CliConfig {
   return {
     path: getArgValue(argv, "path") ?? DEFAULT_CONFIG.path,
@@ -64,5 +87,6 @@ export function runCliAgent(argv: string[]): CliConfig {
     focus: coerceFocus(getArgValue(argv, "focus")),
     maxFileSizeMB: parseNumber(getArgValue(argv, "max-file-size-mb")),
     scanTimeoutMs: parseNumber(getArgValue(argv, "scan-timeout-ms")),
+    enableFixes: parseBooleanFlag(argv, "fix"),
   };
 }

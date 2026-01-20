@@ -41,18 +41,20 @@ function extractCandidateText(payload: GeminiResponse): string {
   return text;
 }
 
-export async function callGeminiNarrator(params: {
+export async function callGemini(params: {
   apiKey: string;
   model: string;
   prompt: string;
+  temperature?: number;
+  maxOutputTokens?: number;
 }): Promise<string> {
-  const { apiKey, model, prompt } = params;
+  const { apiKey, model, prompt, temperature, maxOutputTokens } = params;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const body: GeminiRequest = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: 512,
+      temperature: temperature ?? 0.2,
+      maxOutputTokens: maxOutputTokens ?? 512,
     },
   };
 
@@ -71,4 +73,12 @@ export async function callGeminiNarrator(params: {
 
   const payload = (await response.json()) as GeminiResponse;
   return extractCandidateText(payload);
+}
+
+export async function callGeminiNarrator(params: {
+  apiKey: string;
+  model: string;
+  prompt: string;
+}): Promise<string> {
+  return callGemini(params);
 }

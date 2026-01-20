@@ -268,7 +268,7 @@ function collectDuplicateBlocks(files: NormalizedFile[]): DuplicateBlock[] {
 
   const duplicatesMap = new Map<string, { block: DuplicateBlock; occurrenceKeys: Set<string> }>();
 
-  for (const [blockKey, occurrences] of candidates) {
+  for (const [, occurrences] of candidates) {
     if (occurrences.length < DUPLICATE_MIN_OCCURRENCES) {
       continue;
     }
@@ -410,7 +410,8 @@ function collectCircularDependencies(
 
 export async function runCodeAnalysisAgent(
   config: CliConfig,
-  scan: RepoScanResult
+  scan: RepoScanResult,
+  overrides?: Record<string, string>
 ): Promise<AnalysisResult> {
   const rootPath = path.resolve(config.path);
   const files = scan.files.filter((file) => JS_TS_EXTENSIONS.has(file.extension));
@@ -427,10 +428,15 @@ export async function runCodeAnalysisAgent(
 
     const absolutePath = toAbsolutePath(rootPath, relativePath);
     let content: string;
-    try {
-      content = await fs.readFile(absolutePath, "utf8");
-    } catch {
-      continue;
+    const overrideContent = overrides?.[relativePath];
+    if (overrideContent !== undefined) {
+      content = overrideContent;
+    } else {
+      try {
+        content = await fs.readFile(absolutePath, "utf8");
+      } catch {
+        continue;
+      }
     }
 
     const scriptKind = getScriptKind(file.extension);
