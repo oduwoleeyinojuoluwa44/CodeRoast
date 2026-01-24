@@ -1,3 +1,4 @@
+require("dotenv/config");
 const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const os = require("node:os");
@@ -31,8 +32,15 @@ async function createDemoRepo(root) {
 
 async function main() {
   const keep = process.argv.includes("--keep");
+  const model = process.env.GEMINI_MODEL ?? "gemini-3-flash";
+  const apiVersion = process.env.GEMINI_API_VERSION;
   if (!process.env.GEMINI_API_KEY) {
     console.warn("GEMINI_API_KEY is not set; fix-it suggestions will be skipped.");
+  } else {
+    console.log(`Using GEMINI_MODEL=${model}`);
+    if (apiVersion) {
+      console.log(`Using GEMINI_API_VERSION=${apiVersion}`);
+    }
   }
 
   const projectRoot = path.resolve(__dirname, "..");
