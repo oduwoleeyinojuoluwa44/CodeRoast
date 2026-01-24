@@ -55,7 +55,7 @@ test("rejects patches outside evidence ranges", async () => {
       models: {
         generateContent: async () => ({
           text:
-            "--- a/src/long.ts\n+++ b/src/long.ts\n@@ -1,1 +1,1 @@\n-// header\n+// changed header\n",
+            "--- a/src/long.ts\n+++ b/src/long.ts\n@@ -1,1 +1,1 @@ longFn\n-// header\n+// changed header\n",
         }),
       },
     }));

@@ -51,7 +51,7 @@ function normalizeDiffPath(value: string): string {
 }
 
 function parseHunkHeader(line: string): Hunk | null {
-  const match = /@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line);
+  const match = /@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(?: .*)?$/.exec(line);
   if (!match) {
     return null;
   }
@@ -71,7 +71,11 @@ function parseUnifiedDiff(diff: string): FilePatch[] {
   let currentHunk: Hunk | null = null;
 
   for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
+    const rawLine = lines[i];
+    const line = rawLine.replace(/\r$/, "");
+    if (line.startsWith("```")) {
+      continue;
+    }
     if (line.startsWith("--- ")) {
       const oldPath = normalizeDiffPath(line.slice(4));
       const next = lines[i + 1] ?? "";
@@ -111,6 +115,22 @@ function parseUnifiedDiff(diff: string): FilePatch[] {
   }
 
   return patches;
+}
+
+function hasPatchChanges(patches: FilePatch[]): boolean {
+  for (const patch of patches) {
+    for (const hunk of patch.hunks) {
+      for (const line of hunk.lines) {
+        if (line.startsWith("+") || line.startsWith("-")) {
+          if (line.startsWith("+++ ") || line.startsWith("--- ")) {
+            continue;
+          }
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 function applyPatchToContent(content: string, patch: FilePatch): string {
@@ -244,9 +264,12 @@ function buildLongFunctionPrompt(
 ): string {
   return [
     "You are a code fixer. Output ONLY a unified diff.",
+    "Return a complete unified diff with ---/+++ headers and @@ hunk headers.",
+    "Do not wrap the diff in markdown fences or add commentary.",
     "You must only modify lines within the evidence line ranges provided.",
     "Do not add new files. Do not edit outside the ranges.",
-    "Goal: reduce function length below the long-function threshold.",
+    `Goal: reduce function length below ${LONG_FUNCTION_LOC} lines.`,
+    "Ensure the diff includes at least one added or removed line.",
     "",
     `Issue type: ${issue.type}`,
     `Signal: ${issue.signal}`,
@@ -266,9 +289,12 @@ function buildDuplicatePrompt(
 ): string {
   return [
     "You are a code fixer. Output ONLY a unified diff.",
+    "Return a complete unified diff with ---/+++ headers and @@ hunk headers.",
+    "Do not wrap the diff in markdown fences or add commentary.",
     "You must only modify lines within the evidence line ranges provided.",
     "Do not add new files. Do not edit outside the ranges.",
     "Goal: eliminate duplication by changing one occurrence.",
+    "Ensure the diff includes at least one added or removed line.",
     "",
     `Issue type: ${issue.type}`,
     `Signal: ${issue.signal}`,
@@ -347,7 +373,7 @@ async function generatePatch(
     apiKey,
     model,
     prompt,
-    temperature: 0.1,
+    temperature: 0,
     maxOutputTokens: 900,
   });
 }
@@ -404,6 +430,9 @@ async function attemptFix(
     patches = parseUnifiedDiff(patchText);
     if (patches.length === 0) {
       throw new Error("Empty patch response.");
+    }
+    if (!hasPatchChanges(patches)) {
+      throw new Error("Patch contains no changes.");
     }
   } catch (error) {
     return {
