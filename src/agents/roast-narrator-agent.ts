@@ -98,7 +98,7 @@ export async function runRoastNarratorAgent(
     return { content: fallbackLines.join("\n") };
   }
 
-  const model = process.env.GEMINI_MODEL ?? "gemini-3-flash";
+  const model = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
   const issuesWithId: NarrationIssue[] = insights.issues.map((issue, index) => ({
     ...issue,
     id: index + 1,

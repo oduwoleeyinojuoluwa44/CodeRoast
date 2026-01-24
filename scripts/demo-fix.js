@@ -1,4 +1,4 @@
-require("dotenv/config");
+require("dotenv").config({ override: true });
 const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const os = require("node:os");
@@ -32,7 +32,7 @@ async function createDemoRepo(root) {
 
 async function main() {
   const keep = process.argv.includes("--keep");
-  const model = process.env.GEMINI_MODEL ?? "gemini-3-flash";
+  const model = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
   const apiVersion = process.env.GEMINI_API_VERSION;
   if (!process.env.GEMINI_API_KEY) {
     console.warn("GEMINI_API_KEY is not set; fix-it suggestions will be skipped.");

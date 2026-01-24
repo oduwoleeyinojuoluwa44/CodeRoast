@@ -368,7 +368,7 @@ async function attemptFix(
     return null;
   }
 
-  const model = process.env.GEMINI_MODEL ?? "gemini-3-flash";
+  const model = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
   const rootPath = path.resolve(config.path);
 
   let prompt = "";
