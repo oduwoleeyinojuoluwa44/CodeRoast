@@ -12,6 +12,7 @@
     "test": "npm run build && node --test tests/**/*.test.js"
   },
   "dependencies": {
+    "@google/genai": "^1.38.0",
     "dotenv": "^17.2.3",
     "ignore": "^5.3.1",
     "typescript": "^5.0.0"

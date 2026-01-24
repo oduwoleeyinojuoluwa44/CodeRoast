@@ -1,4 +1,4 @@
-import { callGeminiNarrator } from "./gemini-client";
+import { callGeminiNarrator, getGeminiApiKey } from "./gemini-client";
 import type {
   CliConfig,
   EvidenceItem,
@@ -93,12 +93,12 @@ export async function runRoastNarratorAgent(
     formatIssueLine(index, issue, buildDeterministicMessage(issue))
   );
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getGeminiApiKey();
   if (!apiKey) {
     return { content: fallbackLines.join("\n") };
   }
 
-  const model = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
+  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
   const issuesWithId: NarrationIssue[] = insights.issues.map((issue, index) => ({
     ...issue,
     id: index + 1,

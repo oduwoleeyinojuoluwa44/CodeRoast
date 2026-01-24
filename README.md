@@ -46,6 +46,8 @@ CLI Agent
 
 ## Getting Started
 
+Prerequisite: Node.js 20+ (required by `@google/genai`).
+
 1. Install dependencies:
 
 ```
@@ -58,7 +60,7 @@ npm install
 npm run build
 ```
 
-3. (Optional) Enable Gemini narration:
+3. (Optional) Enable Gemini narration (Google Gen AI SDK):
 
 ```
 set GEMINI_API_KEY=your_api_key
@@ -70,14 +72,16 @@ You can also add it to a `.env` file at the project root (see `.env.example`):
 GEMINI_API_KEY=your_api_key
 ```
 
+The Google Gen AI SDK also supports `GOOGLE_API_KEY` if you prefer that name.
+
 Optional overrides:
 
 ```
-GEMINI_MODEL=gemini-1.5-flash
+GEMINI_MODEL=gemini-2.5-flash
 GEMINI_API_VERSION=v1
 ```
 
-If you see a model not found error, set `GEMINI_MODEL` to an available model (for example, `gemini-3-flash` if your API access includes it) or specify `GEMINI_API_VERSION`.
+If you see a model not found error, set `GEMINI_MODEL` to an available model (for example, `gemini-3-flash-preview` if your API access includes it) or specify `GEMINI_API_VERSION`. The SDK defaults to beta endpoints unless you set an API version.
 
 4. Run the CLI:
 

@@ -260,7 +260,7 @@ Planned: god files, layer violations, dependency direction.
 
 ### Configuration
 
-* `GEMINI_API_KEY` (required to enable fixes)
+* `GEMINI_API_KEY` or `GOOGLE_API_KEY` (required to enable fixes)
 * `--fix` (enable fix-it previews)
 
 ### Hard Constraints
@@ -280,11 +280,11 @@ Planned: god files, layer violations, dependency direction.
 * Generate roast-style feedback
 * Explain issues using provided evidence
 * Match selected tone (gentle, savage, investor-demo)
-* Call Gemini API (Gemini 3) with evidence-only prompts
+* Call Gemini API via the Google Gen AI SDK (`@google/genai`) with evidence-only prompts
 
 ### Configuration
 
-* `GEMINI_API_KEY` (required to enable Gemini)
+* `GEMINI_API_KEY` or `GOOGLE_API_KEY` (required to enable Gemini)
 
 ### Hard Constraints
 
@@ -342,7 +342,7 @@ Worst case behavior:
 ## Implementation Plan (Gemini Integration)
 
 1. Add a Gemini client module and strict evidence-only prompt builder.
-2. Use `GEMINI_API_KEY` to enable the narrator, with deterministic fallback when missing or on API error.
+2. Use `GEMINI_API_KEY` or `GOOGLE_API_KEY` to enable the narrator, with deterministic fallback when missing or on API error.
 3. Wire Gemini into the pipeline using Evidence Guard output only.
 4. Add tests with mocked Gemini responses and failure-mode fallback.
 

@@ -8,6 +8,9 @@ const { runCodeAnalysisAgent } = require("../dist/agents/code-analysis-agent.js"
 const { runInsightAggregatorAgent } = require("../dist/agents/insight-aggregator-agent.js");
 const { runEvidenceGuardAgent } = require("../dist/agents/evidence-guard-agent.js");
 const { runFixItAgent } = require("../dist/agents/fix-it-agent.js");
+const {
+  setGeminiClientFactoryForTests,
+} = require("../dist/agents/gemini-client.js");
 
 async function withTempDir(callback) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "coderoast-fix-"));
@@ -47,27 +50,15 @@ test("rejects patches outside evidence ranges", async () => {
     const guarded = runEvidenceGuardAgent(insights);
 
     const originalKey = process.env.GEMINI_API_KEY;
-    const originalFetch = globalThis.fetch;
     process.env.GEMINI_API_KEY = "test-key";
-    globalThis.fetch = async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        candidates: [
-          {
-            content: {
-              parts: [
-                {
-                  text:
-                    "--- a/src/long.ts\n+++ b/src/long.ts\n@@ -1,1 +1,1 @@\n-// header\n+// changed header\n",
-                },
-              ],
-            },
-          },
-        ],
-      }),
-      text: async () => "",
-    });
+    setGeminiClientFactoryForTests(() => ({
+      models: {
+        generateContent: async () => ({
+          text:
+            "--- a/src/long.ts\n+++ b/src/long.ts\n@@ -1,1 +1,1 @@\n-// header\n+// changed header\n",
+        }),
+      },
+    }));
 
     const result = await runFixItAgent(config, scan, analysis, guarded);
     assert.equal(result.suggestions.length > 0, true);
@@ -79,6 +70,6 @@ test("rejects patches outside evidence ranges", async () => {
     } else {
       delete process.env.GEMINI_API_KEY;
     }
-    globalThis.fetch = originalFetch;
+    setGeminiClientFactoryForTests(null);
   });
 });

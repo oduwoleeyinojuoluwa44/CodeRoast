@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { callGemini } from "./gemini-client";
+import { callGemini, getGeminiApiKey } from "./gemini-client";
 import { LONG_FUNCTION_LOC, runCodeAnalysisAgent } from "./code-analysis-agent";
 import type {
   AnalysisResult,
@@ -363,12 +363,12 @@ async function attemptFix(
     return null;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getGeminiApiKey();
   if (!apiKey) {
     return null;
   }
 
-  const model = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
+  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
   const rootPath = path.resolve(config.path);
 
   let prompt = "";

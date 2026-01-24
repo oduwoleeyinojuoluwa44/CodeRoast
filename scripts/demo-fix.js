@@ -32,10 +32,13 @@ async function createDemoRepo(root) {
 
 async function main() {
   const keep = process.argv.includes("--keep");
-  const model = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
+  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
   const apiVersion = process.env.GEMINI_API_VERSION;
-  if (!process.env.GEMINI_API_KEY) {
-    console.warn("GEMINI_API_KEY is not set; fix-it suggestions will be skipped.");
+  const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    console.warn(
+      "GEMINI_API_KEY/GOOGLE_API_KEY is not set; fix-it suggestions will be skipped."
+    );
   } else {
     console.log(`Using GEMINI_MODEL=${model}`);
     if (apiVersion) {

@@ -1,6 +1,9 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const { runRoastNarratorAgent } = require("../dist/agents/roast-narrator-agent.js");
+const {
+  setGeminiClientFactoryForTests,
+} = require("../dist/agents/gemini-client.js");
 
 function createConfig() {
   return { path: ".", severity: "gentle", focus: "general" };
@@ -38,6 +41,7 @@ function createInsights() {
 test("falls back to deterministic output without Gemini API key", async () => {
   const originalKey = process.env.GEMINI_API_KEY;
   delete process.env.GEMINI_API_KEY;
+  setGeminiClientFactoryForTests(null);
 
   const result = await runRoastNarratorAgent(createConfig(), createInsights());
   assert.match(result.content, /src\/a\.ts:1-3/);
@@ -46,30 +50,19 @@ test("falls back to deterministic output without Gemini API key", async () => {
   if (originalKey) {
     process.env.GEMINI_API_KEY = originalKey;
   }
+  setGeminiClientFactoryForTests(null);
 });
 
 test("uses Gemini output when available", async () => {
   const originalKey = process.env.GEMINI_API_KEY;
-  const originalFetch = globalThis.fetch;
   process.env.GEMINI_API_KEY = "test-key";
-  globalThis.fetch = async () => ({
-    ok: true,
-    status: 200,
-    json: async () => ({
-      candidates: [
-        {
-          content: {
-            parts: [
-              {
-                text: '[{"id":1,"text":"Duplication at src/a.ts lines 1-3."},{"id":2,"text":"not enough data"}]',
-              },
-            ],
-          },
-        },
-      ],
-    }),
-    text: async () => "",
-  });
+  setGeminiClientFactoryForTests(() => ({
+    models: {
+      generateContent: async () => ({
+        text: '[{"id":1,"text":"Duplication at src/a.ts lines 1-3."},{"id":2,"text":"not enough data"}]',
+      }),
+    },
+  }));
 
   const result = await runRoastNarratorAgent(createConfig(), createInsights());
   assert.match(result.content, /Duplication at src\/a\.ts lines 1-3\./);
@@ -80,21 +73,17 @@ test("uses Gemini output when available", async () => {
   } else {
     delete process.env.GEMINI_API_KEY;
   }
-  globalThis.fetch = originalFetch;
+  setGeminiClientFactoryForTests(null);
 });
 
 test("falls back when Gemini output is invalid", async () => {
   const originalKey = process.env.GEMINI_API_KEY;
-  const originalFetch = globalThis.fetch;
   process.env.GEMINI_API_KEY = "test-key";
-  globalThis.fetch = async () => ({
-    ok: true,
-    status: 200,
-    json: async () => ({
-      candidates: [{ content: { parts: [{ text: "not json" }] } }],
-    }),
-    text: async () => "",
-  });
+  setGeminiClientFactoryForTests(() => ({
+    models: {
+      generateContent: async () => ({ text: "not json" }),
+    },
+  }));
 
   const result = await runRoastNarratorAgent(createConfig(), createInsights());
   assert.match(result.content, /src\/a\.ts:1-3/);
@@ -105,5 +94,5 @@ test("falls back when Gemini output is invalid", async () => {
   } else {
     delete process.env.GEMINI_API_KEY;
   }
-  globalThis.fetch = originalFetch;
+  setGeminiClientFactoryForTests(null);
 });
