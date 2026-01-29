@@ -4,6 +4,7 @@ const DEFAULT_CONFIG: CliConfig = {
   path: ".",
   severity: "gentle",
   focus: "general",
+  showDetails: false,
 };
 
 const SEVERITIES: Severity[] = ["gentle", "savage", "investor-demo"];
@@ -88,5 +89,6 @@ export function runCliAgent(argv: string[]): CliConfig {
     maxFileSizeMB: parseNumber(getArgValue(argv, "max-file-size-mb")),
     scanTimeoutMs: parseNumber(getArgValue(argv, "scan-timeout-ms")),
     enableFixes: parseBooleanFlag(argv, "fix"),
+    showDetails: parseBooleanFlag(argv, "details"),
   };
 }

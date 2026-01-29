@@ -89,6 +89,12 @@ If you see a model not found error, set `GEMINI_MODEL` to an available model (fo
 npm start -- --path . --severity savage --focus architecture
 ```
 
+To include raw evidence and patch diffs in the output, add `--details`:
+
+```
+npm start -- --path . --severity savage --focus architecture --details
+```
+
 5. (Optional) Preview evidence-locked fixes:
 
 ```

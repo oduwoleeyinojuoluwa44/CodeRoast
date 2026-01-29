@@ -8,6 +8,7 @@ export interface CliConfig {
   maxFileSizeMB?: number;
   scanTimeoutMs?: number;
   enableFixes?: boolean;
+  showDetails?: boolean;
 }
 
 export interface FileManifestEntry {

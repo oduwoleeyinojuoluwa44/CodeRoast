@@ -44,7 +44,8 @@ test("falls back to deterministic output without Gemini API key", async () => {
   setGeminiClientFactoryForTests(null);
 
   const result = await runRoastNarratorAgent(createConfig(), createInsights());
-  assert.match(result.content, /src\/a\.ts:1-3/);
+  assert.match(result.content, /Repeated code/i);
+  assert.match(result.content, /src\/a\.ts lines 1-3/);
   assert.match(result.content, /not enough data/);
 
   if (originalKey) {
@@ -86,7 +87,8 @@ test("falls back when Gemini output is invalid", async () => {
   }));
 
   const result = await runRoastNarratorAgent(createConfig(), createInsights());
-  assert.match(result.content, /src\/a\.ts:1-3/);
+  assert.match(result.content, /Repeated code/i);
+  assert.match(result.content, /src\/a\.ts lines 1-3/);
   assert.match(result.content, /not enough data/);
 
   if (originalKey) {
