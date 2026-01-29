@@ -31,6 +31,7 @@ CLI Agent
   -> Insight Aggregator Agent
   -> Evidence Guard Agent
   -> Fix-It Agent (optional --fix)
+  -> Fix-Apply Agent (optional --apply-fixes)
   -> Roast Narrator Agent (Gemini API)
   -> Output Formatter Agent
 ```
@@ -270,7 +271,31 @@ Planned: god files, layer violations, dependency direction.
 
 ---
 
-## 7. Roast Narrator Agent (Gemini API)
+## 7. Fix-Apply Agent (optional --apply-fixes)
+
+**Type:** Deterministic  
+**Role:** Proof-locked application of fixes on a new git branch
+
+### Responsibilities
+
+* Apply verified Fix-It patches on a new git branch
+* Run tests and only mark the apply as successful if tests pass
+* Report branch name, test command, and pass/fail status
+
+### Configuration
+
+* `--apply-fixes` (enable apply)
+* `--fix-branch <name>` (optional branch name)
+* `--fix-test-cmd "<cmd>"` (optional test command override)
+
+### Hard Constraints
+
+* Must refuse to run on a dirty working tree
+* Must not modify files if patch application fails
+
+---
+
+## 8. Roast Narrator Agent (Gemini API)
 
 **Type:** Generative (Constrained)  
 **Role:** Human-readable explanation and humor
@@ -301,7 +326,7 @@ Planned: god files, layer violations, dependency direction.
 
 ---
 
-## 8. Output Formatter Agent
+## 9. Output Formatter Agent
 
 **Type:** Deterministic  
 **Role:** UX presentation

@@ -7,9 +7,11 @@ import type {
   CliConfig,
   EvidenceItem,
   FixResult,
+  FixPreviewSummary,
   FixSuggestion,
   GuardedIssue,
   GuardedInsights,
+  MetricDelta,
   RepoScanResult,
 } from "../types";
 
@@ -162,6 +164,41 @@ function applyPatchToContent(content: string, patch: FilePatch): string {
 
   output.push(...lines.slice(cursor));
   return output.join("\n");
+}
+
+async function applyPatchesToOverrides(
+  rootPath: string,
+  patches: FilePatch[]
+): Promise<Record<string, string>> {
+  const overrides: Record<string, string> = {};
+  const byFile = new Map<string, FilePatch[]>();
+  for (const patch of patches) {
+    const list = byFile.get(patch.filePath) ?? [];
+    list.push(patch);
+    byFile.set(patch.filePath, list);
+  }
+
+  for (const [filePath, filePatches] of byFile) {
+    const absolutePath = toAbsolutePath(rootPath, filePath);
+    const original = await fs.readFile(absolutePath, "utf8");
+    let content = overrides[filePath] ?? original;
+    for (const patch of filePatches) {
+      content = applyPatchToContent(content, patch);
+    }
+    overrides[filePath] = content;
+  }
+
+  return overrides;
+}
+
+function buildMetricDelta(before: AnalysisResult, after: AnalysisResult): MetricDelta {
+  return {
+    maxFunctionLength: after.metrics.maxFunctionLength - before.metrics.maxFunctionLength,
+    avgFunctionLength:
+      Math.round((after.metrics.avgFunctionLength - before.metrics.avgFunctionLength) * 100) / 100,
+    duplicateBlocks: after.metrics.duplicateBlocks - before.metrics.duplicateBlocks,
+    totalFunctions: after.metrics.totalFunctions - before.metrics.totalFunctions,
+  };
 }
 
 function lineInRanges(line: number, ranges: LineRange[]): boolean {
@@ -490,6 +527,33 @@ async function attemptFix(
   };
 }
 
+async function buildPreviewSummary(
+  config: CliConfig,
+  scan: RepoScanResult,
+  analysis: AnalysisResult,
+  suggestions: FixSuggestion[]
+): Promise<FixPreviewSummary | undefined> {
+  const verifiedPatches = suggestions
+    .filter((suggestion) => suggestion.verified && suggestion.patch)
+    .flatMap((suggestion) => parseUnifiedDiff(suggestion.patch));
+
+  if (verifiedPatches.length === 0) {
+    return { before: analysis.metrics, note: "No verified patches to compare yet." };
+  }
+
+  const rootPath = path.resolve(config.path);
+  const overrides = await applyPatchesToOverrides(rootPath, verifiedPatches);
+  const after = await runCodeAnalysisAgent(config, scan, overrides);
+  const delta = buildMetricDelta(analysis, after);
+
+  return {
+    before: analysis.metrics,
+    after: after.metrics,
+    delta,
+    note: "Preview metrics are based on verified patch candidates.",
+  };
+}
+
 export async function runFixItAgent(
   config: CliConfig,
   scan: RepoScanResult,
@@ -509,5 +573,7 @@ export async function runFixItAgent(
     suggestions.push(suggestion);
   }
 
-  return { suggestions };
+  const previewSummary = await buildPreviewSummary(config, scan, analysis, suggestions);
+
+  return { suggestions, previewSummary };
 }

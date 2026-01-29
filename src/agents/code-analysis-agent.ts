@@ -5,6 +5,7 @@ import type {
   AnalysisResult,
   CircularDependency,
   CliConfig,
+  DependencySummary,
   DuplicateBlock,
   LongFunction,
   RepoScanResult,
@@ -408,6 +409,57 @@ function collectCircularDependencies(
   return cycles;
 }
 
+function buildDependencySummary(
+  files: NormalizedFile[],
+  filePaths: Set<string>,
+  cycles: CircularDependency[]
+): DependencySummary {
+  const outCounts = new Map<string, Set<string>>();
+  const inCounts = new Map<string, Set<string>>();
+
+  for (const file of files) {
+    for (const ref of file.imports) {
+      const resolved = resolveImportPath(file.path, ref.specifier, filePaths);
+      if (!resolved) {
+        continue;
+      }
+      const outSet = outCounts.get(file.path) ?? new Set<string>();
+      outSet.add(resolved);
+      outCounts.set(file.path, outSet);
+
+      const inSet = inCounts.get(resolved) ?? new Set<string>();
+      inSet.add(file.path);
+      inCounts.set(resolved, inSet);
+    }
+  }
+
+  const topImporters = [...outCounts.entries()]
+    .map(([file, imports]) => ({ file, imports: imports.size }))
+    .sort((a, b) => b.imports - a.imports)
+    .slice(0, 5);
+
+  const topImported = [...inCounts.entries()]
+    .map(([file, importedBy]) => ({ file, importedBy: importedBy.size }))
+    .sort((a, b) => b.importedBy - a.importedBy)
+    .slice(0, 5);
+
+  let edges = 0;
+  for (const imports of outCounts.values()) {
+    edges += imports.size;
+  }
+
+  const sampleCycle = cycles.length > 0 ? { from: cycles[0].from, to: cycles[0].to } : undefined;
+
+  return {
+    nodes: filePaths.size,
+    edges,
+    topImporters,
+    topImported,
+    cycles: cycles.length,
+    sampleCycle,
+  };
+}
+
 export async function runCodeAnalysisAgent(
   config: CliConfig,
   scan: RepoScanResult,
@@ -474,6 +526,11 @@ export async function runCodeAnalysisAgent(
   const duplicateBlocks = collectDuplicateBlocks(normalizedFiles);
   const filePathSet = new Set<string>(normalizedFiles.map((file) => file.path));
   const circularDependencies = collectCircularDependencies(normalizedFiles, filePathSet);
+  const dependencySummary = buildDependencySummary(
+    normalizedFiles,
+    filePathSet,
+    circularDependencies
+  );
 
   return {
     metrics: {
@@ -491,5 +548,6 @@ export async function runCodeAnalysisAgent(
         testFiles: testFiles.sort(),
       },
     },
+    dependencySummary,
   };
 }

@@ -1,6 +1,7 @@
 import { runCliAgent } from "./agents/cli-agent";
 import { runCodeAnalysisAgent } from "./agents/code-analysis-agent";
 import { runEvidenceGuardAgent } from "./agents/evidence-guard-agent";
+import { runFixApplyAgent } from "./agents/fix-apply-agent";
 import { runFixItAgent } from "./agents/fix-it-agent";
 import { runInsightAggregatorAgent } from "./agents/insight-aggregator-agent";
 import { runOutputFormatterAgent } from "./agents/output-formatter-agent";
@@ -16,7 +17,10 @@ export async function runPipeline(argv: string[]): Promise<string> {
   const fixResult = cliConfig.enableFixes
     ? await runFixItAgent(cliConfig, scanResult, analysisResult, guardedInsights)
     : undefined;
+  if (fixResult && cliConfig.applyFixes) {
+    fixResult.applyResult = await runFixApplyAgent(cliConfig, fixResult);
+  }
   const roast = await runRoastNarratorAgent(cliConfig, guardedInsights);
-  const formatted = runOutputFormatterAgent(cliConfig, roast, fixResult);
+  const formatted = runOutputFormatterAgent(cliConfig, roast, fixResult, analysisResult);
   return formatted.text;
 }

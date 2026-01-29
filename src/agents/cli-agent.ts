@@ -81,6 +81,10 @@ function parseBooleanFlag(args: string[], name: string): boolean {
   return false;
 }
 
+function parseBooleanFlagWithAliases(args: string[], names: string[]): boolean {
+  return names.some((name) => parseBooleanFlag(args, name));
+}
+
 export function runCliAgent(argv: string[]): CliConfig {
   return {
     path: getArgValue(argv, "path") ?? DEFAULT_CONFIG.path,
@@ -90,5 +94,8 @@ export function runCliAgent(argv: string[]): CliConfig {
     scanTimeoutMs: parseNumber(getArgValue(argv, "scan-timeout-ms")),
     enableFixes: parseBooleanFlag(argv, "fix"),
     showDetails: parseBooleanFlag(argv, "details"),
+    applyFixes: parseBooleanFlagWithAliases(argv, ["apply-fixes", "apply"]),
+    fixBranch: getArgValue(argv, "fix-branch"),
+    fixTestCmd: getArgValue(argv, "fix-test-cmd"),
   };
 }

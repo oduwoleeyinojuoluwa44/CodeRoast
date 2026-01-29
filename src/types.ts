@@ -9,6 +9,9 @@ export interface CliConfig {
   scanTimeoutMs?: number;
   enableFixes?: boolean;
   showDetails?: boolean;
+  applyFixes?: boolean;
+  fixBranch?: string;
+  fixTestCmd?: string;
 }
 
 export interface FileManifestEntry {
@@ -82,6 +85,16 @@ export interface AnalysisSignals {
 export interface AnalysisResult {
   metrics: AnalysisMetrics;
   signals: AnalysisSignals;
+  dependencySummary?: DependencySummary;
+}
+
+export interface DependencySummary {
+  nodes: number;
+  edges: number;
+  topImporters: { file: string; imports: number }[];
+  topImported: { file: string; importedBy: number }[];
+  cycles: number;
+  sampleCycle?: { from: string; to: string };
 }
 
 export type Confidence = "low" | "medium" | "high";
@@ -122,6 +135,8 @@ export interface GuardedInsights {
 
 export interface RoastResult {
   content: string;
+  usedGemini?: boolean;
+  actionItems?: string[];
 }
 
 export interface FixSuggestion {
@@ -137,6 +152,30 @@ export interface FixSuggestion {
 
 export interface FixResult {
   suggestions: FixSuggestion[];
+  previewSummary?: FixPreviewSummary;
+  applyResult?: FixApplyResult;
+}
+
+export interface FixPreviewSummary {
+  before: AnalysisMetrics;
+  after?: AnalysisMetrics;
+  delta?: MetricDelta;
+  note?: string;
+}
+
+export interface FixApplyResult {
+  status: "skipped" | "applied" | "failed";
+  branch?: string;
+  message: string;
+  testCommand?: string;
+  testsPassed?: boolean;
+}
+
+export interface MetricDelta {
+  maxFunctionLength: number;
+  avgFunctionLength: number;
+  duplicateBlocks: number;
+  totalFunctions: number;
 }
 
 export interface FormattedOutput {

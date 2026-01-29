@@ -103,11 +103,23 @@ npm start -- --path . --fix
 
 Fix-It only outputs patch previews and does not edit files.
 
+6. (Optional) Proof-locked apply (new branch + tests):
+
+```
+npm start -- --path . --fix --apply-fixes
+```
+
+Optional flags:
+
+- `--fix-branch <name>`: name the branch to create (default is `coderoast-fix-<timestamp>`).
+- `--fix-test-cmd "<cmd>"`: override the test command (default is `npm test`).
+
 ## Scripts
 
 - `npm run lint` - run ESLint
 - `npm run lint:fix` - auto-fix lint issues
 - `npm run demo:fix` - create a demo repo and run Fix-It (requires `GEMINI_API_KEY` for suggestions)
+- `npm run demo:judge` - run a judge-style report on the current repo (`--details` + `--fix`)
 - `npm run typecheck` - run TypeScript in no-emit mode
 - `npm run build` - compile to `dist/`
 - `npm start` - run the compiled CLI

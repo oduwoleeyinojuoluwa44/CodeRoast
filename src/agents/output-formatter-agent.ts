@@ -1,4 +1,13 @@
-import type { CliConfig, FixResult, FixSuggestion, FormattedOutput, RoastResult } from "../types";
+import type {
+  AnalysisResult,
+  CliConfig,
+  FixApplyResult,
+  FixResult,
+  FixSuggestion,
+  FixPreviewSummary,
+  FormattedOutput,
+  RoastResult,
+} from "../types";
 
 function humanizeFixMessage(message: string): string {
   const mappings: { pattern: RegExp; replacement: string }[] = [
@@ -51,15 +60,99 @@ function formatFixSummary(suggestion: FixSuggestion): string {
   return `${suggestion.issueId}. [${suggestion.issueType}] ${status}: ${detail}`;
 }
 
+function formatPreviewSummary(summary: FixPreviewSummary): string[] {
+  const lines: string[] = ["", "Impact Summary (preview)"];
+  const before = summary.before;
+  if (!summary.after || !summary.delta) {
+    lines.push("No verified patches to compare yet.");
+    return lines;
+  }
+  const after = summary.after;
+  const delta = summary.delta;
+  lines.push(
+    `Max function length: ${before.maxFunctionLength} -> ${after.maxFunctionLength} (${delta.maxFunctionLength})`
+  );
+  lines.push(
+    `Avg function length: ${before.avgFunctionLength} -> ${after.avgFunctionLength} (${delta.avgFunctionLength})`
+  );
+  lines.push(
+    `Duplicate blocks: ${before.duplicateBlocks} -> ${after.duplicateBlocks} (${delta.duplicateBlocks})`
+  );
+  lines.push(
+    `Total functions: ${before.totalFunctions} -> ${after.totalFunctions} (${delta.totalFunctions})`
+  );
+  if (summary.note) {
+    lines.push(summary.note);
+  }
+  return lines;
+}
+
+function formatApplyResult(result: FixApplyResult): string[] {
+  const lines: string[] = ["", "Proof-Locked Apply"];
+  lines.push(result.message);
+  if (result.branch) {
+    lines.push(`Branch: ${result.branch}`);
+  }
+  if (result.testCommand) {
+    lines.push(`Tests: ${result.testCommand}`);
+  }
+  if (result.testsPassed !== undefined) {
+    lines.push(`Tests passed: ${result.testsPassed ? "yes" : "no"}`);
+  }
+  return lines;
+}
+
+function formatArchitectureSummary(analysis?: AnalysisResult): string[] {
+  if (!analysis?.dependencySummary) {
+    return [];
+  }
+  const summary = analysis.dependencySummary;
+  const lines: string[] = ["", "Architecture Map"];
+  lines.push(`Internal modules: ${summary.nodes}`);
+  lines.push(`Import links: ${summary.edges}`);
+  if (summary.topImporters.length > 0) {
+    lines.push("Top importers:");
+    for (const entry of summary.topImporters) {
+      lines.push(`- ${entry.file} (${entry.imports})`);
+    }
+  }
+  if (summary.topImported.length > 0) {
+    lines.push("Most imported:");
+    for (const entry of summary.topImported) {
+      lines.push(`- ${entry.file} (${entry.importedBy})`);
+    }
+  }
+  if (summary.cycles > 0 && summary.sampleCycle) {
+    lines.push(`Cycles detected: ${summary.cycles}`);
+    lines.push(`Example cycle: ${summary.sampleCycle.from} ↔ ${summary.sampleCycle.to}`);
+  } else {
+    lines.push("Cycles detected: 0");
+  }
+  return lines;
+}
+
 export function runOutputFormatterAgent(
   config: CliConfig,
   roast: RoastResult,
-  fixResult?: FixResult
+  fixResult?: FixResult,
+  analysis?: AnalysisResult
 ): FormattedOutput {
   const title = `CodeRoast (${config.severity}, ${config.focus})`;
   const divider = "-".repeat(title.length);
 
   const sections: string[] = [`${title}\n${divider}\n${roast.content}`];
+
+  if (roast.actionItems && roast.actionItems.length > 0 && roast.usedGemini === false) {
+    sections.push(["", "Action Items", ...roast.actionItems.map((item) => `- ${item}`)].join("\n"));
+  }
+
+  if (analysis?.dependencySummary) {
+    sections.push(formatArchitectureSummary(analysis).join("\n").trimEnd());
+  }
+
+  if (fixResult?.previewSummary) {
+    sections.push(formatPreviewSummary(fixResult.previewSummary).join("\n").trimEnd());
+  }
 
   if (fixResult && fixResult.suggestions.length > 0) {
     const fixLines: string[] = ["", "Fix-It (preview)"];
@@ -80,6 +173,10 @@ export function runOutputFormatterAgent(
       fixLines.push("Run with --details to see the patch diff.");
     }
     sections.push(fixLines.join("\n").trimEnd());
+  }
+
+  if (fixResult?.applyResult) {
+    sections.push(formatApplyResult(fixResult.applyResult).join("\n").trimEnd());
   }
 
   return {

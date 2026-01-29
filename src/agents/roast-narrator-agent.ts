@@ -122,6 +122,44 @@ function buildLaymanMessage(issue: GuardedIssue): string {
   }
 }
 
+function buildActionItem(issue: GuardedIssue): string | null {
+  if (!issue.evidenceComplete) {
+    if (issue.signal === "testPresence") {
+      return "Add at least one test file to cover critical paths.";
+    }
+    return null;
+  }
+
+  const example = issue.evidence[0];
+  switch (issue.signal) {
+    case "longFunctions": {
+      if (!example) {
+        return "Split long functions into smaller helpers.";
+      }
+      return `Split ${example.file} around lines ${example.startLine}-${example.endLine} into smaller helpers.`;
+    }
+    case "duplicateBlocks": {
+      if (!example) {
+        return "Extract repeated logic into a shared helper.";
+      }
+      return `Extract repeated logic around ${example.file} lines ${example.startLine}-${example.endLine} into a shared helper.`;
+    }
+    case "circularDependencies": {
+      if (!example) {
+        return "Break circular dependencies by moving shared code into a lower-level module.";
+      }
+      return `Break the dependency loop involving ${example.file} (lines ${example.startLine}-${example.endLine}).`;
+    }
+    case "testPresence":
+      return "Add at least one test file to cover critical paths.";
+    default:
+      if (!example) {
+        return "Create a focused refactor for the flagged area.";
+      }
+      return `Review ${example.file} lines ${example.startLine}-${example.endLine} for a focused refactor.`;
+  }
+}
+
 function formatEvidenceList(issue: GuardedIssue): string {
   if (issue.evidence.length === 0) {
     return "   Evidence: none";
@@ -204,6 +242,7 @@ export async function runRoastNarratorAgent(
   if (insights.issues.length === 0) {
     return {
       content: `No issues detected for ${config.focus}. Add analyzers to produce evidence-bound findings.`,
+      usedGemini: false,
     };
   }
 
@@ -216,9 +255,17 @@ export async function runRoastNarratorAgent(
     )
   );
 
+  const actionItems = insights.issues
+    .map(buildActionItem)
+    .filter((item): item is string => Boolean(item));
+
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
-    return { content: fallbackLines.join("\n\n") };
+    return {
+      content: fallbackLines.join("\n\n"),
+      usedGemini: false,
+      actionItems,
+    };
   }
 
   const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
@@ -267,8 +314,12 @@ export async function runRoastNarratorAgent(
       );
     });
 
-    return { content: lines.join("\n\n") };
+    return { content: lines.join("\n\n"), usedGemini: true };
   } catch {
-    return { content: fallbackLines.join("\n\n") };
+    return {
+      content: fallbackLines.join("\n\n"),
+      usedGemini: false,
+      actionItems,
+    };
   }
 }
