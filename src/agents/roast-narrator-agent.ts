@@ -25,10 +25,6 @@ function formatEvidenceExample(item: EvidenceItem): string {
   return `${item.file} lines ${item.startLine}-${item.endLine}${locText}`;
 }
 
-function summarizeEvidenceDetails(issue: GuardedIssue): string {
-  return issue.evidence.map(formatEvidenceItem).join("; ");
-}
-
 function buildLongFunctionMessage(issue: GuardedIssue): string {
   const examples = issue.evidence.slice(0, 2).map(formatEvidenceExample);
   if (examples.length === 0) {
@@ -126,17 +122,25 @@ function buildLaymanMessage(issue: GuardedIssue): string {
   }
 }
 
+function formatEvidenceList(issue: GuardedIssue): string {
+  if (issue.evidence.length === 0) {
+    return "   Evidence: none";
+  }
+  const lines = issue.evidence.map((item) => `   - ${formatEvidenceItem(item)}`);
+  return ["   Evidence:", ...lines].join("\n");
+}
+
 function formatIssueLine(
   index: number,
   issue: GuardedIssue,
   message: string,
-  details?: string
+  showDetails?: boolean
 ): string {
   const base = `${index + 1}. [${issue.type}] ${message}`;
-  if (!details) {
+  if (!showDetails) {
     return base;
   }
-  return `${base}\n   Evidence: ${details}`;
+  return `${base}\n${formatEvidenceList(issue)}`;
 }
 
 type NarrationIssue = GuardedIssue & { id: number };
@@ -208,13 +212,13 @@ export async function runRoastNarratorAgent(
       index,
       issue,
       buildLaymanMessage(issue),
-      config.showDetails ? summarizeEvidenceDetails(issue) : undefined
+      config.showDetails
     )
   );
 
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
-    return { content: fallbackLines.join("\n") };
+    return { content: fallbackLines.join("\n\n") };
   }
 
   const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
@@ -245,7 +249,7 @@ export async function runRoastNarratorAgent(
           index,
           issue,
           "not enough data",
-          config.showDetails ? summarizeEvidenceDetails(issue) : undefined
+          config.showDetails
         );
       }
       const geminiText = byId.get(issue.id);
@@ -259,12 +263,12 @@ export async function runRoastNarratorAgent(
         index,
         issue,
         geminiText,
-        config.showDetails ? summarizeEvidenceDetails(issue) : undefined
+        config.showDetails
       );
     });
 
-    return { content: lines.join("\n") };
+    return { content: lines.join("\n\n") };
   } catch {
-    return { content: fallbackLines.join("\n") };
+    return { content: fallbackLines.join("\n\n") };
   }
 }
