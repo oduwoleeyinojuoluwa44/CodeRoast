@@ -95,6 +95,8 @@ To include raw evidence and patch diffs in the output, add `--details`:
 npm start -- --path . --severity savage --focus architecture --details
 ```
 
+You can cap the evidence list with `--details-limit` (default is 3 when details are shown). Use `--details-limit=0` to show all evidence lines.
+
 5. (Optional) Preview evidence-locked fixes:
 
 ```

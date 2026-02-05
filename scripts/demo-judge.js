@@ -33,6 +33,7 @@ function main() {
     "architecture",
     "--fix",
     "--details",
+    "--details-limit=3",
   ];
 
   if (process.argv.includes("--apply")) {

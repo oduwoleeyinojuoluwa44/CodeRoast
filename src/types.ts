@@ -9,6 +9,7 @@ export interface CliConfig {
   scanTimeoutMs?: number;
   enableFixes?: boolean;
   showDetails?: boolean;
+  detailsLimit?: number;
   applyFixes?: boolean;
   fixBranch?: string;
   fixTestCmd?: string;

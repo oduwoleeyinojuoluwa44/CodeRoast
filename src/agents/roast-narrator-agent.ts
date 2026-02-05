@@ -26,14 +26,14 @@ function formatEvidenceExample(item: EvidenceItem): string {
 }
 
 function buildLongFunctionMessage(issue: GuardedIssue): string {
-  const examples = issue.evidence.slice(0, 2).map(formatEvidenceExample);
-  if (examples.length === 0) {
+  const example = issue.evidence[0];
+  if (!example) {
     return "Long functions detected, but the evidence list is empty.";
   }
-  const extraCount = issue.evidence.length - examples.length;
+  const extraCount = issue.evidence.length - 1;
   const extraText = extraCount > 0 ? ` (+${extraCount} more)` : "";
-  return `Very long functions can be hard to maintain, for example ${examples.join(
-    " and "
+  return `Very long functions can be hard to maintain, for example ${formatEvidenceExample(
+    example
   )}${extraText}.`;
 }
 
@@ -72,7 +72,7 @@ function buildDuplicateMessage(issue: GuardedIssue): string {
     return "Repeated code detected, but the evidence list is empty.";
   }
 
-  const examples = firstBlock.examples.slice(0, 2).map(formatEvidenceExample);
+  const example = firstBlock.examples[0];
   const countText =
     typeof firstBlock.count === "number"
       ? ` (${firstBlock.count} total copies)`
@@ -80,8 +80,11 @@ function buildDuplicateMessage(issue: GuardedIssue): string {
   const locText =
     typeof firstBlock.loc === "number" ? ` (~${firstBlock.loc} lines)` : "";
 
-  return `Repeated code${locText} appears in multiple places${countText}, for example ${examples.join(
-    " and "
+  if (!example) {
+    return `Repeated code${locText} appears in multiple places${countText}.`;
+  }
+  return `Repeated code${locText} appears in multiple places${countText}, for example ${formatEvidenceExample(
+    example
   )}.`;
 }
 
@@ -160,11 +163,17 @@ function buildActionItem(issue: GuardedIssue): string | null {
   }
 }
 
-function formatEvidenceList(issue: GuardedIssue): string {
+function formatEvidenceList(issue: GuardedIssue, limit?: number): string {
   if (issue.evidence.length === 0) {
     return "   Evidence: none";
   }
-  const lines = issue.evidence.map((item) => `   - ${formatEvidenceItem(item)}`);
+  const maxItems = limit === undefined ? 3 : limit <= 0 ? issue.evidence.length : limit;
+  const shown = issue.evidence.slice(0, maxItems);
+  const lines = shown.map((item) => `   - ${formatEvidenceItem(item)}`);
+  const remaining = issue.evidence.length - shown.length;
+  if (remaining > 0) {
+    lines.push(`   - ... +${remaining} more`);
+  }
   return ["   Evidence:", ...lines].join("\n");
 }
 
@@ -172,13 +181,14 @@ function formatIssueLine(
   index: number,
   issue: GuardedIssue,
   message: string,
-  showDetails?: boolean
+  showDetails?: boolean,
+  detailsLimit?: number
 ): string {
   const base = `${index + 1}. [${issue.type}] ${message}`;
   if (!showDetails) {
     return base;
   }
-  return `${base}\n${formatEvidenceList(issue)}`;
+  return `${base}\n${formatEvidenceList(issue, detailsLimit)}`;
 }
 
 type NarrationIssue = GuardedIssue & { id: number };
@@ -251,7 +261,8 @@ export async function runRoastNarratorAgent(
       index,
       issue,
       buildLaymanMessage(issue),
-      config.showDetails
+      config.showDetails,
+      config.detailsLimit
     )
   );
 
@@ -296,7 +307,8 @@ export async function runRoastNarratorAgent(
           index,
           issue,
           "not enough data",
-          config.showDetails
+          config.showDetails,
+          config.detailsLimit
         );
       }
       const geminiText = byId.get(issue.id);
@@ -310,7 +322,8 @@ export async function runRoastNarratorAgent(
         index,
         issue,
         geminiText,
-        config.showDetails
+        config.showDetails,
+        config.detailsLimit
       );
     });
 

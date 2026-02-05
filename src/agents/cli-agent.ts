@@ -94,6 +94,7 @@ export function runCliAgent(argv: string[]): CliConfig {
     scanTimeoutMs: parseNumber(getArgValue(argv, "scan-timeout-ms")),
     enableFixes: parseBooleanFlag(argv, "fix"),
     showDetails: parseBooleanFlag(argv, "details"),
+    detailsLimit: parseNumber(getArgValue(argv, "details-limit")),
     applyFixes: parseBooleanFlagWithAliases(argv, ["apply-fixes", "apply"]),
     fixBranch: getArgValue(argv, "fix-branch"),
     fixTestCmd: getArgValue(argv, "fix-test-cmd"),
