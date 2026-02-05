@@ -570,6 +570,7 @@ async function attemptFix(
   let patches: FilePatch[] = [];
   const allowedRanges = buildAllowedRanges(issue);
   const fallbackFile = evidenceItems[0]?.file;
+  const debugPaths: string[] = [];
 
   try {
     patchText = await generatePatch(apiKey, model, prompt);
@@ -577,6 +578,7 @@ async function attemptFix(
     if (config.fixDebug) {
       const debugPath = await writeDebugPatch(issueId, "raw", patchText);
       console.warn(`[Fix-It Debug] saved response to ${debugPath}`);
+      debugPaths.push(debugPath);
     }
     try {
       patches = parseUnifiedDiff(patchText);
@@ -594,6 +596,7 @@ async function attemptFix(
       if (config.fixDebug) {
         const debugPath = await writeDebugPatch(issueId, "retry", patchText);
         console.warn(`[Fix-It Debug] saved response to ${debugPath}`);
+        debugPaths.push(debugPath);
       }
       patches = parseUnifiedDiff(patchText);
       if (patches.length === 0) {
@@ -612,6 +615,7 @@ async function attemptFix(
       patch: "",
       verified: false,
       verificationMessage: error instanceof Error ? error.message : "Invalid patch.",
+      debugPaths: debugPaths.length > 0 ? debugPaths : undefined,
     };
   }
 
@@ -625,6 +629,7 @@ async function attemptFix(
       patch: "",
       verified: false,
       verificationMessage: guard.reason ?? "Patch rejected by evidence guard.",
+      debugPaths: debugPaths.length > 0 ? debugPaths : undefined,
     };
   }
 
@@ -656,6 +661,7 @@ async function attemptFix(
     verified: verification.ok,
     verificationMessage: verification.message,
     verificationDetails: verification.details,
+    debugPaths: debugPaths.length > 0 ? debugPaths : undefined,
   };
 }
 

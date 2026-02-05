@@ -162,6 +162,12 @@ export function runOutputFormatterAgent(
       if (config.showDetails && suggestion.verificationDetails) {
         fixLines.push(`Details: ${suggestion.verificationDetails}`);
       }
+      if (suggestion.debugPaths && suggestion.debugPaths.length > 0) {
+        fixLines.push("Debug output:");
+        for (const debugPath of suggestion.debugPaths) {
+          fixLines.push(`- ${debugPath}`);
+        }
+      }
       if (config.showDetails && suggestion.patch) {
         fixLines.push(suggestion.patch);
       } else if (suggestion.patch) {

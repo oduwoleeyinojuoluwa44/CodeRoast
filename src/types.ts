@@ -150,6 +150,7 @@ export interface FixSuggestion {
   verified: boolean;
   verificationMessage: string;
   verificationDetails?: string;
+  debugPaths?: string[];
 }
 
 export interface FixResult {
