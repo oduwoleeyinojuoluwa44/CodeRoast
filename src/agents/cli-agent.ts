@@ -96,6 +96,7 @@ export function runCliAgent(argv: string[]): CliConfig {
     showDetails: parseBooleanFlag(argv, "details"),
     detailsLimit: parseNumber(getArgValue(argv, "details-limit")),
     applyFixes: parseBooleanFlagWithAliases(argv, ["apply-fixes", "apply"]),
+    fixDebug: parseBooleanFlag(argv, "fix-debug"),
     fixBranch: getArgValue(argv, "fix-branch"),
     fixTestCmd: getArgValue(argv, "fix-test-cmd"),
   };

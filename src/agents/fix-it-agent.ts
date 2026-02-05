@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { callGemini, getGeminiApiKey } from "./gemini-client";
 import { LONG_FUNCTION_LOC, runCodeAnalysisAgent } from "./code-analysis-agent";
@@ -191,6 +192,35 @@ function applyPatchToContent(content: string, patch: FilePatch): string {
 
   output.push(...lines.slice(cursor));
   return output.join("\n");
+}
+
+function stripMarkdownFences(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => !line.trimStart().startsWith("```"))
+    .join("\n");
+}
+
+function ensureDiffHeaders(text: string, fallbackFile?: string): string {
+  const lines = text.split(/\r?\n/);
+  const hasHeader = lines.some((line) => line.startsWith("--- "));
+  const hasHunk = lines.some((line) => line.startsWith("@@ "));
+  if (hasHeader || !hasHunk || !fallbackFile) {
+    return text;
+  }
+  return [`--- a/${fallbackFile}`, `+++ b/${fallbackFile}`, ...lines].join("\n");
+}
+
+async function writeDebugPatch(
+  issueId: number,
+  label: string,
+  contents: string
+): Promise<string> {
+  const dir = path.join(os.tmpdir(), "coderoast-fix-debug");
+  await fs.mkdir(dir, { recursive: true });
+  const filePath = path.join(dir, `issue-${issueId}-${label}.txt`);
+  await fs.writeFile(filePath, contents);
+  return filePath;
 }
 
 async function applyPatchesToOverrides(
@@ -398,6 +428,7 @@ function buildDuplicatePrompt(
     `Issue type: ${issue.type}`,
     `Signal: ${issue.signal}`,
     `Evidence: ${summarizeEvidence(issue)}`,
+    `Target file: ${snippets[0]?.file ?? "unknown"}`,
     "",
     "Evidence snippets (with line numbers):",
     ...snippets.map(
@@ -538,9 +569,15 @@ async function attemptFix(
   let patchText = "";
   let patches: FilePatch[] = [];
   const allowedRanges = buildAllowedRanges(issue);
+  const fallbackFile = evidenceItems[0]?.file;
 
   try {
     patchText = await generatePatch(apiKey, model, prompt);
+    patchText = ensureDiffHeaders(stripMarkdownFences(patchText), fallbackFile);
+    if (config.fixDebug) {
+      const debugPath = await writeDebugPatch(issueId, "raw", patchText);
+      console.warn(`[Fix-It Debug] saved response to ${debugPath}`);
+    }
     try {
       patches = parseUnifiedDiff(patchText);
       if (patches.length === 0) {
@@ -553,6 +590,11 @@ async function attemptFix(
       const reason = error instanceof Error ? error.message : "Invalid patch.";
       const retryPrompt = buildRetryPrompt(prompt, reason);
       patchText = await generatePatch(apiKey, model, retryPrompt);
+      patchText = ensureDiffHeaders(stripMarkdownFences(patchText), fallbackFile);
+      if (config.fixDebug) {
+        const debugPath = await writeDebugPatch(issueId, "retry", patchText);
+        console.warn(`[Fix-It Debug] saved response to ${debugPath}`);
+      }
       patches = parseUnifiedDiff(patchText);
       if (patches.length === 0) {
         throw new Error("Empty patch response.");

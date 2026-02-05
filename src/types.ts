@@ -11,6 +11,7 @@ export interface CliConfig {
   showDetails?: boolean;
   detailsLimit?: number;
   applyFixes?: boolean;
+  fixDebug?: boolean;
   fixBranch?: string;
   fixTestCmd?: string;
 }
