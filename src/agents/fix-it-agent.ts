@@ -78,9 +78,36 @@ function parseUnifiedDiff(diff: string): FilePatch[] {
     if (line.startsWith("```")) {
       continue;
     }
+    if (line.startsWith("diff --git")) {
+      current = null;
+      currentHunk = null;
+      continue;
+    }
+    if (line.startsWith("index ")) {
+      continue;
+    }
     if (line.startsWith("--- ")) {
       const oldPath = normalizeDiffPath(line.slice(4));
-      const next = lines[i + 1] ?? "";
+      let nextIndex = i + 1;
+      while (nextIndex < lines.length) {
+        const candidate = (lines[nextIndex] ?? "").replace(/\r$/, "");
+        if (candidate.startsWith("+++ ")) {
+          break;
+        }
+        if (
+          candidate.startsWith("--- ") ||
+          candidate.startsWith("@@ ") ||
+          candidate.startsWith("diff --git")
+        ) {
+          break;
+        }
+        if (candidate.startsWith("index ") || candidate.trim().length === 0) {
+          nextIndex += 1;
+          continue;
+        }
+        nextIndex += 1;
+      }
+      const next = lines[nextIndex] ?? "";
       if (!next.startsWith("+++ ")) {
         throw new Error("Malformed diff header.");
       }
@@ -89,7 +116,7 @@ function parseUnifiedDiff(diff: string): FilePatch[] {
       current = { filePath, hunks: [] };
       patches.push(current);
       currentHunk = null;
-      i += 1;
+      i = nextIndex;
       continue;
     }
 
@@ -383,6 +410,18 @@ function buildDuplicatePrompt(
   ].join("\n");
 }
 
+function buildRetryPrompt(basePrompt: string, reason: string): string {
+  return [
+    `Previous output was invalid: ${reason}`,
+    "You MUST return ONLY a valid unified diff.",
+    "Do not include diff --git or index lines.",
+    "Do not include markdown or commentary.",
+    "Use the strict template exactly.",
+    "",
+    basePrompt,
+  ].join("\n");
+}
+
 function findMaxLongFunctionInRange(
   longFunctions: AnalysisResult["signals"]["longFunctions"],
   file: string,
@@ -502,12 +541,25 @@ async function attemptFix(
 
   try {
     patchText = await generatePatch(apiKey, model, prompt);
-    patches = parseUnifiedDiff(patchText);
-    if (patches.length === 0) {
-      throw new Error("Empty patch response.");
-    }
-    if (!hasPatchChanges(patches)) {
-      throw new Error("Patch contains no changes.");
+    try {
+      patches = parseUnifiedDiff(patchText);
+      if (patches.length === 0) {
+        throw new Error("Empty patch response.");
+      }
+      if (!hasPatchChanges(patches)) {
+        throw new Error("Patch contains no changes.");
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "Invalid patch.";
+      const retryPrompt = buildRetryPrompt(prompt, reason);
+      patchText = await generatePatch(apiKey, model, retryPrompt);
+      patches = parseUnifiedDiff(patchText);
+      if (patches.length === 0) {
+        throw new Error("Empty patch response.");
+      }
+      if (!hasPatchChanges(patches)) {
+        throw new Error("Patch contains no changes.");
+      }
     }
   } catch (error) {
     return {
