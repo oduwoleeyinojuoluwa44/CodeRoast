@@ -299,10 +299,26 @@ function buildLongFunctionPrompt(
   issue: GuardedIssue,
   snippets: { file: string; startLine: number; endLine: number; text: string }[]
 ): string {
+  const templates = snippets.map((snippet) => {
+    const length = Math.max(1, snippet.endLine - snippet.startLine + 1);
+    return [
+      `--- a/${snippet.file}`,
+      `+++ b/${snippet.file}`,
+      `@@ -${snippet.startLine},${length} +${snippet.startLine},${length} @@`,
+      " <unchanged line>",
+      "-<line to remove>",
+      "+<line to add>",
+      " <unchanged line>",
+    ].join("\n");
+  });
+
   return [
     "You are a code fixer. Output ONLY a unified diff.",
     "Return a complete unified diff with ---/+++ headers and @@ hunk headers.",
     "Do not wrap the diff in markdown fences or add commentary.",
+    "Use the strict template below. Replace placeholders with real code.",
+    "Choose one template and output only the filled diff.",
+    "If you change line counts, adjust the @@ header lengths accordingly.",
     "You must only modify lines within the evidence line ranges provided.",
     "Do not add new files. Do not edit outside the ranges.",
     `Goal: reduce function length below ${LONG_FUNCTION_LOC} lines.`,
@@ -317,6 +333,9 @@ function buildLongFunctionPrompt(
       (snippet) =>
         `File: ${snippet.file} (${snippet.startLine}-${snippet.endLine})\n${snippet.text}`
     ),
+    "",
+    "Strict diff template (fill in one of these):",
+    ...templates,
   ].join("\n");
 }
 
@@ -324,10 +343,26 @@ function buildDuplicatePrompt(
   issue: GuardedIssue,
   snippets: { file: string; startLine: number; endLine: number; text: string }[]
 ): string {
+  const templates = snippets.map((snippet) => {
+    const length = Math.max(1, snippet.endLine - snippet.startLine + 1);
+    return [
+      `--- a/${snippet.file}`,
+      `+++ b/${snippet.file}`,
+      `@@ -${snippet.startLine},${length} +${snippet.startLine},${length} @@`,
+      " <unchanged line>",
+      "-<line to remove>",
+      "+<line to add>",
+      " <unchanged line>",
+    ].join("\n");
+  });
+
   return [
     "You are a code fixer. Output ONLY a unified diff.",
     "Return a complete unified diff with ---/+++ headers and @@ hunk headers.",
     "Do not wrap the diff in markdown fences or add commentary.",
+    "Use the strict template below. Replace placeholders with real code.",
+    "Choose one template and output only the filled diff.",
+    "If you change line counts, adjust the @@ header lengths accordingly.",
     "You must only modify lines within the evidence line ranges provided.",
     "Do not add new files. Do not edit outside the ranges.",
     "Goal: eliminate duplication by changing one occurrence.",
@@ -342,6 +377,9 @@ function buildDuplicatePrompt(
       (snippet) =>
         `File: ${snippet.file} (${snippet.startLine}-${snippet.endLine})\n${snippet.text}`
     ),
+    "",
+    "Strict diff template (fill in one of these):",
+    ...templates,
   ].join("\n");
 }
 
