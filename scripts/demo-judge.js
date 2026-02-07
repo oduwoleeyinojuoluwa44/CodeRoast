@@ -34,6 +34,7 @@ function main() {
     "--fix",
     "--details",
     "--details-limit=3",
+    "--fix-limit=1",
   ];
 
   if (process.argv.includes("--apply")) {

@@ -116,6 +116,7 @@ Optional flags:
 - `--fix-branch <name>`: name the branch to create (default is `coderoast-fix-<timestamp>`).
 - `--fix-test-cmd "<cmd>"`: override the test command (default is `npm test`).
 - `--fix-debug`: save raw Gemini patch output to a temp file for debugging.
+- `--fix-limit <n>`: limit how many Fix-It attempts to run.
 
 ## Scripts
 

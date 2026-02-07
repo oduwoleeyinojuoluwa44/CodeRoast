@@ -14,6 +14,7 @@ export interface CliConfig {
   fixDebug?: boolean;
   fixBranch?: string;
   fixTestCmd?: string;
+  fixLimit?: number;
 }
 
 export interface FileManifestEntry {

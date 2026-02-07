@@ -523,6 +523,20 @@ async function generatePatch(
   });
 }
 
+function classifyGeminiError(error: unknown): { code?: number; message: string } {
+  const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
+  const match = /Gemini API error (\d+)/i.exec(message);
+  const code = match ? Number(match[1]) : undefined;
+  return { code, message };
+}
+
+function buildQuotaMessage(message: string): string {
+  if (message.includes("RESOURCE_EXHAUSTED") || message.includes("quota")) {
+    return "Fix-It skipped: Gemini quota exceeded. Try again later.";
+  }
+  return message;
+}
+
 async function attemptFix(
   issueId: number,
   issue: GuardedIssue,
@@ -536,6 +550,10 @@ async function attemptFix(
 
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
+    return null;
+  }
+
+  if (config.fixLimit === 0) {
     return null;
   }
 
@@ -607,6 +625,7 @@ async function attemptFix(
       }
     }
   } catch (error) {
+    const info = classifyGeminiError(error);
     return {
       issueId,
       issueType: issue.type,
@@ -614,7 +633,7 @@ async function attemptFix(
       files: Object.keys(allowedRanges),
       patch: "",
       verified: false,
-      verificationMessage: error instanceof Error ? error.message : "Invalid patch.",
+      verificationMessage: buildQuotaMessage(info.message),
       debugPaths: debugPaths.length > 0 ? debugPaths : undefined,
     };
   }
@@ -702,8 +721,9 @@ export async function runFixItAgent(
   const candidates = insights.issues.filter((issue) =>
     FIXABLE_SIGNALS.has(issue.signal)
   );
+  const maxFixes = config.fixLimit ?? MAX_FIXES;
 
-  for (const [index, issue] of candidates.slice(0, MAX_FIXES).entries()) {
+  for (const [index, issue] of candidates.slice(0, maxFixes).entries()) {
     const suggestion = await attemptFix(index + 1, issue, config, scan, analysis);
     if (!suggestion) {
       continue;

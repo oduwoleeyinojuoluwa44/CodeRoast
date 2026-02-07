@@ -99,5 +99,6 @@ export function runCliAgent(argv: string[]): CliConfig {
     fixDebug: parseBooleanFlag(argv, "fix-debug"),
     fixBranch: getArgValue(argv, "fix-branch"),
     fixTestCmd: getArgValue(argv, "fix-test-cmd"),
+    fixLimit: parseNumber(getArgValue(argv, "fix-limit")),
   };
 }
