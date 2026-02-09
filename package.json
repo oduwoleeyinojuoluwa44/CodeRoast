@@ -1,9 +1,9 @@
 {
   "name": "coderoast",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "demo:fix": "node scripts/demo-fix.js",
@@ -12,6 +12,15 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/**/*.test.js"
   },
+  "bin": {
+    "coderoast": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "Agents.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "@google/genai": "^1.38.0",
     "dotenv": "^17.2.3",

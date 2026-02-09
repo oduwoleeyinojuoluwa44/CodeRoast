@@ -48,6 +48,18 @@ CLI Agent
 
 Prerequisite: Node.js 20+ (required by `@google/genai`).
 
+## Install (npm)
+
+```
+npm install -g coderoast
+```
+
+Run:
+
+```
+coderoast --path . --severity savage --focus architecture
+```
+
 1. Install dependencies:
 
 ```
